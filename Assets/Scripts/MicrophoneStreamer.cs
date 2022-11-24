@@ -13,6 +13,7 @@ public class MicrophoneStreamer : MonoBehaviour
 
     void Start()
     {
+        /*
         audioSource = GetComponent<AudioSource>();
         if (Microphone.devices.Length > 0)
         {
@@ -24,10 +25,12 @@ public class MicrophoneStreamer : MonoBehaviour
         }
 
         audioSource.Play();
+        */
     }
 
     void Update()
     {
+        /*
         if ((currentPosition = Microphone.GetPosition(null)) > 0)
         {
             if (lastPosition > currentPosition)
@@ -54,6 +57,7 @@ public class MicrophoneStreamer : MonoBehaviour
                 lastPosition = currentPosition;
             }
         }
+        */
     }
 
     short f32_to_i16(float sample)
