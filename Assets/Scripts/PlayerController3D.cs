@@ -28,5 +28,7 @@ public class PlayerController3D : MonoBehaviour
         movementDirection.Normalize();
 
         characterController.SimpleMove(movementDirection * movementMagnitude);
+
+        transform.rotation = Quaternion.Euler(0, orientation.rotationY, 0);
     }
 }
