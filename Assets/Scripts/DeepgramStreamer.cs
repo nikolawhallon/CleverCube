@@ -30,6 +30,8 @@ public class DeepgramStreamer : MonoBehaviour
 {
     WebSocket websocket;
 
+    public CleverCubeConverser cleverCubeConverser;
+
     async void Start()
     {
         // Note: I tried everything under the sun to be able to get the key from an environment variable on linux, but no dice
@@ -64,7 +66,7 @@ public class DeepgramStreamer : MonoBehaviour
                 var transcript = deepgramResponse.channel.alternatives[0].transcript;
                 Debug.Log(transcript);
 
-                // TODO: do something with the transcript
+                cleverCubeConverser.HandleASR(transcript);
             }
         };
 
