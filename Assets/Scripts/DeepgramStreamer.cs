@@ -34,10 +34,15 @@ public class DeepgramStreamer : MonoBehaviour
 
     async void Start()
     {
-        // Note: I tried everything under the sun to be able to get the key from an environment variable on linux, but no dice
+        var deepgram_api_key = Environment.GetEnvironmentVariable("DEEPGRAM_API_KEY");
+
+        if (deepgram_api_key == null) {
+            deepgram_api_key = "INSERT_YOUR_DEEPGRAM_API_KEY";
+        }
+
         var headers = new Dictionary<string, string>
         {
-            { "Authorization", "Token INSERT_YOUR_DEEPGRAM_API_KEY" }
+            { "Authorization", "Token " + deepgram_api_key }
         };
         websocket = new WebSocket("wss://api.deepgram.com/v1/listen?encoding=linear16&sample_rate=" + AudioSettings.outputSampleRate.ToString(), headers);
 
