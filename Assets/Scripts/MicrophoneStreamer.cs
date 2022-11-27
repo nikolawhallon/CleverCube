@@ -3,61 +3,87 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Audio;
 
+using FrostweepGames.Plugins.Native;
+
 [RequireComponent(typeof(AudioSource))]
 public class MicrophoneStreamer : MonoBehaviour
 {
     AudioSource audioSource;
     int lastPosition, currentPosition;
 
+    bool recordingInitiated;
+
     public DeepgramStreamer deepgram;
 
     void Start()
     {
-        /*
+        recordingInitiated = false;
+        CustomMicrophone.RequestMicrophonePermission();
+#if UNITY_EDITOR
         audioSource = GetComponent<AudioSource>();
-        if (Microphone.devices.Length > 0)
-        {
-            audioSource.clip = Microphone.Start(null, true, 10, AudioSettings.outputSampleRate);
-        }
-        else
-        {
-            Debug.Log("This will crash!");
-        }
-
-        audioSource.Play();
-        */
+#endif
     }
 
     void Update()
     {
-        /*
-        if ((currentPosition = Microphone.GetPosition(null)) > 0)
-        {
-            if (lastPosition > currentPosition)
-                lastPosition = 0;
+        if (!CustomMicrophone.HasConnectedMicrophoneDevices()) {
+            Debug.Log("We don't have a connected microphone device yet");
+            CustomMicrophone.RefreshMicrophoneDevices();
+            CustomMicrophone.RequestMicrophonePermission();
+        }
 
-            if (currentPosition - lastPosition > 0)
-            {
-                float[] samples = new float[(currentPosition - lastPosition) * audioSource.clip.channels];
-                audioSource.clip.GetData(samples, lastPosition);
+        if (CustomMicrophone.HasConnectedMicrophoneDevices() && !CustomMicrophone.IsRecording(CustomMicrophone.devices[0]) && recordingInitiated == false) {
+            Debug.Log("We have a microphone, but we haven't started recording, so will attempt to start recording here");
+#if UNITY_EDITOR
+            audioSource.clip = CustomMicrophone.Start(CustomMicrophone.devices[0], true, 10, AudioSettings.outputSampleRate);
+            audioSource.Play();
+#endif
 
-                short[] samplesAsShorts = new short[(currentPosition - lastPosition) * audioSource.clip.channels];
-                for (int i = 0; i < samples.Length; i++)
+#if UNITY_WEBGL && !UNITY_EDITOR
+            CustomMicrophone.Start(CustomMicrophone.devices[0], true, 10, AudioSettings.outputSampleRate);
+#endif
+            recordingInitiated = true;
+        }
+
+        if (CustomMicrophone.IsRecording(CustomMicrophone.devices[0]))
+		{
+            if ((currentPosition = CustomMicrophone.GetPosition(CustomMicrophone.devices[0])) > 0) {
+                if (lastPosition > currentPosition)
+                    lastPosition = 0;
+
+                if (currentPosition - lastPosition > 0)
                 {
-                    samplesAsShorts[i] = f32_to_i16(samples[i]);
+#if UNITY_EDITOR
+                    float[] samples = new float[(currentPosition - lastPosition) * audioSource.clip.channels];
+                    audioSource.clip.GetData(samples, lastPosition);
+#endif
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+			        float[] samples = new float[0];
+			        CustomMicrophone.GetRawData(ref samples);
+#endif
+                    short[] samplesAsShorts = new short[currentPosition - lastPosition];
+                    for (int i = 0; i < currentPosition - lastPosition; i++)
+                    {
+#if UNITY_EDITOR
+                        samplesAsShorts[i] = f32_to_i16(samples[i]);
+#endif
+
+#if UNITY_WEBGL && !UNITY_EDITOR
+                        samplesAsShorts[i] = f32_to_i16(samples[i + lastPosition]);
+#endif
+                    }
+
+                    var samplesAsBytes = new byte[samplesAsShorts.Length * 2];
+
+                    System.Buffer.BlockCopy(samplesAsShorts, 0, samplesAsBytes, 0, samplesAsBytes.Length);
+
+                    deepgram.ProcessAudio(samplesAsBytes);
+
+                    lastPosition = currentPosition;
                 }
-
-                var samplesAsBytes = new byte[samplesAsShorts.Length * 2];
-                System.Buffer.BlockCopy(samplesAsShorts, 0, samplesAsBytes, 0, samplesAsBytes.Length);
-
-                deepgram.ProcessAudio(samplesAsBytes);
-
-                if (!GetComponent<AudioSource>().isPlaying)
-                    GetComponent<AudioSource>().Play();
-                lastPosition = currentPosition;
             }
         }
-        */
     }
 
     short f32_to_i16(float sample)
